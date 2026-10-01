@@ -56,7 +56,7 @@ struct DashboardView: View {
                     Text("已用 GB")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("套餐 \(monitor.planGB, format: .number.precision(.fractionLength(0))) GB")
+                    Text("套餐 \(String(format: "%.0f", monitor.planGB)) GB")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -71,7 +71,7 @@ struct DashboardView: View {
         ) {
             StatCard(
                 title: "剩余可用",
-                value: "\(monitor.remainingGB, format: .number.precision(.fractionLength(1))) GB",
+                value: String(format: "%.1f GB", monitor.remainingGB),
                 icon: "internaldrive",
                 color: .green
             )
@@ -83,7 +83,7 @@ struct DashboardView: View {
             )
             StatCard(
                 title: "本期日均",
-                value: "\(monitor.averageDailyGB, format: .number.precision(.fractionLength(2))) GB",
+                value: String(format: "%.2f GB", monitor.averageDailyGB),
                 icon: "chart.line.uptrend.xyaxis",
                 color: .purple
             )
@@ -100,16 +100,16 @@ struct DashboardView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("用量预测", systemImage: "crystalball")
                 .font(.headline)
-            Text("按当前日均 \(monitor.averageDailyGB, format: .number.precision(.fractionLength(2))) GB 推算，账期结束时预计使用 \(monitor.projectedUsageGB, format: .number.precision(.fractionLength(1))) GB。")
+            Text("按当前日均 \(String(format: "%.2f", monitor.averageDailyGB)) GB 推算，账期结束时预计使用 \(String(format: "%.1f", monitor.projectedUsageGB)) GB。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             if monitor.isOverLimit {
-                Label("已超出套餐 \(monitor.usedGB - monitor.planGB, format: .number.precision(.fractionLength(1))) GB，请尽快在控制中心关闭蜂窝数据。",
+                Label("已超出套餐 \(String(format: "%.1f", monitor.usedGB - monitor.planGB)) GB，请尽快在控制中心关闭蜂窝数据。",
                       systemImage: "exclamationmark.octagon.fill")
                     .font(.footnote)
                     .foregroundStyle(.red)
             } else if monitor.projectedWillExceed {
-                Label("预计将超出约 \(monitor.projectedUsageGB - monitor.planGB, format: .number.precision(.fractionLength(1))) GB，建议减少视频、热点等高耗流量使用。",
+                Label("预计将超出约 \(String(format: "%.1f", monitor.projectedUsageGB - monitor.planGB)) GB，建议减少视频、热点等高耗流量使用。",
                       systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote)
                     .foregroundStyle(.orange)

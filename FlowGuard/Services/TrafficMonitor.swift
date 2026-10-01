@@ -183,7 +183,7 @@ final class TrafficMonitor: ObservableObject {
     var isOverLimit: Bool { planGB > 0 && usedGB > planGB }
 
     var totalDaysInPeriod: Int {
-        max(calendar.dateComponents([.day], from: periodStartDate, to: periodEndDate).value ?? 30, 1)
+        max(calendar.dateComponents([.day], from: periodStartDate, to: periodEndDate).day ?? 30, 1)
     }
 
     var dayOfPeriod: Int {
@@ -191,7 +191,7 @@ final class TrafficMonitor: ObservableObject {
             [.day],
             from: calendar.startOfDay(for: periodStartDate),
             to: calendar.startOfDay(for: Date())
-        ).value ?? 0
+        ).day ?? 0
         return min(max(elapsed + 1, 1), totalDaysInPeriod)
     }
 
