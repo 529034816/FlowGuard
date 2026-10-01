@@ -1,0 +1,60 @@
+name: Build FlowGuard IPA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show build environment
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Build unsigned app
+        run: |
+          xcodebuild \
+            -project FlowGuard.xcodeproj \
+            -scheme FlowGuard \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package unsigned IPA
+        run: |
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::未找到 .app 构建产物"
+            exit 1
+          fi
+          echo "打包产物：$APP_PATH"
+          mkdir Payload
+          cp -r "$APP_PATH" Payload/
+          zip -rqy FlowGuard-unsigned.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlowGuard-unsigned-ipa
+          path: FlowGuard-unsigned.ipa
+          retention-days: 90

@@ -1,0 +1,15 @@
+# Xcode
+FlowGuard.xcodeproj/xcuserdata/
+FlowGuard.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Build generated
+build/
+DerivedData/
+*.ipa
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
