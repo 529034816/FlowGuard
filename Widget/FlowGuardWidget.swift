@@ -2,7 +2,7 @@
 //  FlowGuardWidget.swift
 //  FlowGuardWidget
 //
-//  桌面 / 锁屏小组件 + 控制中心控件
+//  桌面 / 锁屏小组件 + 控制中心胶囊
 //
 
 import WidgetKit
@@ -40,8 +40,7 @@ struct Provider: TimelineProvider {
 struct FlowGuardWidgetBundle: WidgetBundle {
     var body: some Widget {
         FlowGuardWidget()
-        RemainingControlWidget()
-        UsedControlWidget()
+        FlowSummaryControlWidget()
     }
 }
 
@@ -57,7 +56,6 @@ struct FlowGuardWidget: Widget {
         .supportedFamilies([
             .systemSmall,
             .systemMedium,
-            .accessoryCircular,
             .accessoryRectangular,
             .accessoryInline
         ])
@@ -80,7 +78,7 @@ struct FlowWidgetEntryView: View {
     }
 
     private var isAccessory: Bool {
-        family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline
+        family == .accessoryRectangular || family == .accessoryInline
     }
 
     var body: some View {
@@ -99,8 +97,6 @@ struct FlowWidgetEntryView: View {
         switch family {
         case .systemMedium:
             mediumView
-        case .accessoryCircular:
-            circularView
         case .accessoryRectangular:
             rectangularView
         case .accessoryInline:
@@ -118,32 +114,25 @@ struct FlowWidgetEntryView: View {
         )
     }
 
-    // 锁屏：环形
-    private var circularView: some View {
-        ZStack {
-            Circle()
-                .stroke(.secondary, lineWidth: 4)
-            Circle()
-                .trim(from: 0, to: max(CGFloat(min(max(s.progress, 0), 1)), 0.001))
-                .stroke(.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
-                .rotationEffect(.degrees(-90))
-            Text("\(Int((s.progress * 100).rounded()))%")
-                .font(.system(size: 11, weight: .bold, design: .rounded))
-        }
-    }
-
-    // 锁屏：矩形
+    // 锁屏：矩形（直接显示已用 / 剩余）
     private var rectangularView: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 5) {
+        VStack(alignment: .leading, spacing: 3) {
+            HStack(spacing: 4) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
-                Text("流量管家").font(.system(size: 13, weight: .semibold))
+                Text("流量").font(.system(size: 12, weight: .semibold))
+                Spacer()
+                Text("剩 \(String(format: "%.0f", s.remainingGB)) GB")
+                    .font(.system(size: 12, weight: .bold))
             }
-            Text("已用 \(String(format: "%.1f", s.usedGB)) · 剩 \(String(format: "%.1f", s.remainingGB)) GB")
-                .font(.system(size: 12, weight: .medium))
-            Text("距重置 \(s.daysRemaining) 天 · \(Int((s.progress * 100).rounded()))%")
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Text(String(format: "%.1f", s.usedGB))
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                Text("GB 已用").font(.system(size: 11))
+                Spacer()
+                Text("\(Int((s.progress * 100).rounded()))% · \(s.daysRemaining)天")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -253,46 +242,46 @@ struct WidgetRow: View {
     }
 }
 
-// MARK: - 控制中心控件（iOS 18+）
+// MARK: - 控制中心胶囊（iOS 18+）
 
-struct RemainingControlWidget: ControlWidget {
-    let kind = "com.flowguard.traffic.control.remaining"
+/// 胶囊上开关的无害状态：仅保存到 App Group，不影响任何流量功能。
+struct ControlToggleState {
+    static let key = "control.summary.toggle"
+    static var value: Bool { SharedStats.suite?.bool(forKey: key) ?? false }
+    static func set(_ v: Bool) { SharedStats.suite?.set(v, forKey: key) }
+}
 
-    var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: kind) {
-            ControlWidgetButton(action: OpenFlowAppIntent()) {
-                Label {
-                    Text("剩余流量")
-                } icon: {
-                    let s = SharedStats.Snapshot()
-                    Text(String(format: "%.0f", s.remainingGB))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .minimumScaleFactor(0.55)
-                }
-            }
-        }
-        .displayName("剩余流量")
-        .description("显示本月剩余流量，点击打开 App")
+/// 开关切换时执行：把开关状态写回 App Group（无害）。
+struct ControlToggleIntent: AppIntent {
+    static var title: LocalizedStringResource = "切换流量显示"
+    static var openAppWhenRun: Bool = false
+
+    @Parameter(title: "开关") var isOn: Bool
+
+    func perform() async throws -> some IntentResult {
+        ControlToggleState.set(isOn)
+        return .result()
     }
 }
 
-struct UsedControlWidget: ControlWidget {
-    let kind = "com.flowguard.traffic.control.used"
+struct FlowSummaryControlWidget: ControlWidget {
+    let kind = "com.flowguard.traffic.control.summary"
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: kind) {
-            ControlWidgetButton(action: OpenFlowAppIntent()) {
-                Label {
-                    Text("已用流量")
-                } icon: {
-                    let s = SharedStats.Snapshot()
-                    Text(String(format: "%.0f", s.usedGB))
-                        .font(.system(size: 17, weight: .bold, design: .rounded))
-                        .minimumScaleFactor(0.55)
-                }
+            ControlWidgetToggle(
+                "流量用量",
+                isOn: ControlToggleState.value,
+                action: ControlToggleIntent()
+            ) { _ in
+                let s = SharedStats.Snapshot()
+                Label(
+                    "已用 \(String(format: "%.0f", s.usedGB)) · 剩 \(String(format: "%.0f", s.remainingGB)) GB",
+                    systemImage: "gauge.with.dots.needle.50percent"
+                )
             }
         }
-        .displayName("已用流量")
-        .description("显示本月已用流量，点击打开 App")
+        .displayName("流量用量")
+        .description("在控制中心直接显示本月已用与剩余流量")
     }
 }

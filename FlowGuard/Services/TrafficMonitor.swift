@@ -5,6 +5,7 @@
 
 import Foundation
 import SwiftUI
+import WidgetKit
 
 @MainActor
 final class TrafficMonitor: ObservableObject {
@@ -271,5 +272,8 @@ final class TrafficMonitor: ObservableObject {
             projectedWillExceed: projectedWillExceed,
             averageDailyGB: averageDailyGB
         )
+
+        // 让桌面 / 锁屏小组件立即重新读取共享数据（校准、采样、设置变化后即时生效）。
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }
