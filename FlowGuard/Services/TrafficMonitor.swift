@@ -253,5 +253,23 @@ final class TrafficMonitor: ObservableObject {
         defaults.set(periodStartDate, forKey: Keys.periodStartDate)
         defaults.set(Array(firedAlertKeys), forKey: Keys.firedAlerts)
         defaults.set(lastSampleDate, forKey: Keys.lastSampleDate)
+
+        publishShared()
+    }
+
+    /// 同步给桌面 Widget（经 App Group）。
+    private func publishShared() {
+        SharedStats.publish(
+            usedGB: usedGB,
+            planGB: planGB,
+            remainingGB: remainingGB,
+            progress: progress,
+            daysRemaining: daysRemaining,
+            dayOfPeriod: dayOfPeriod,
+            totalDays: totalDaysInPeriod,
+            isOverLimit: isOverLimit,
+            projectedWillExceed: projectedWillExceed,
+            averageDailyGB: averageDailyGB
+        )
     }
 }

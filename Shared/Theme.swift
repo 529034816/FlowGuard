@@ -1,6 +1,6 @@
 //
 //  Theme.swift
-//  FlowGuard
+//  Shared (主 App 与 Widget 共用)
 //
 //  设计系统：配色、渐变、卡片样式、图标徽章、全屏背景
 //

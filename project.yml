@@ -17,6 +17,7 @@ targets:
     deploymentTarget: "16.0"
     sources:
       - path: FlowGuard
+      - path: Shared
     info:
       path: FlowGuard/Info.plist
       properties:
@@ -30,6 +31,14 @@ targets:
         BGTaskSchedulerPermittedIdentifiers:
           - com.flowguard.traffic.refresh
         ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: FlowGuard/FlowGuard.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.flowguard.traffic
+    dependencies:
+      - target: FlowGuardWidget
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flowguard.traffic
@@ -40,3 +49,28 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         GCC_C_LANGUAGE_STANDARD: gnu17
+
+  FlowGuardWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Widget
+      - path: Shared
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: 流量管家
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/FlowGuardWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.flowguard.traffic
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.flowguard.traffic.widget
+        PRODUCT_NAME: FlowGuardWidget
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
