@@ -35,7 +35,7 @@ enum ProvisionProfile {
         let startToken = Data("<?xml".utf8)
         let endToken = Data("</plist>".utf8)
         guard let startRange = data.range(of: startToken),
-              let endRange = data.range(of: endToken, range: startRange.upperBound..<data.endIndex) else {
+              let endRange = data.range(of: endToken) else {
             return nil
         }
         return data.subdata(in: startRange.lowerBound..<endRange.upperBound)
