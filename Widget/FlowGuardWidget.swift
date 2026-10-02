@@ -252,14 +252,14 @@ struct ControlToggleState {
 }
 
 /// 开关切换时执行：把开关状态写回 App Group（无害）。
-struct ControlToggleIntent: AppIntent {
+struct ControlToggleIntent: SetValueIntent {
     static var title: LocalizedStringResource = "切换流量显示"
     static var openAppWhenRun: Bool = false
 
-    @Parameter(title: "开关") var isOn: Bool
+    @Parameter(title: "开关") var value: Bool
 
     func perform() async throws -> some IntentResult {
-        ControlToggleState.set(isOn)
+        ControlToggleState.set(value)
         return .result()
     }
 }
