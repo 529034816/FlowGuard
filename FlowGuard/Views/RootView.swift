@@ -21,7 +21,7 @@ struct RootView: View {
                     Label("说明", systemImage: "info.circle")
                 }
         }
-        .tint(Color("AccentColor"))
+        .tint(Theme.blue)
     }
 }
 
