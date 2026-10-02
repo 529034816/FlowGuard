@@ -19,6 +19,17 @@ targets:
       - path: FlowGuard
     info:
       path: FlowGuard/Info.plist
+      properties:
+        CFBundleDisplayName: 流量管家
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIBackgroundModes:
+          - fetch
+          - processing
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.flowguard.traffic.refresh
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flowguard.traffic
