@@ -7,7 +7,6 @@
 
 import WidgetKit
 import SwiftUI
-import AppIntents
 
 // MARK: - 数据条目
 
@@ -40,8 +39,6 @@ struct Provider: TimelineProvider {
 struct FlowGuardWidgetBundle: WidgetBundle {
     var body: some Widget {
         FlowGuardWidget()
-        RemainingControlWidget()
-        UsedControlWidget()
     }
 }
 
@@ -240,55 +237,5 @@ struct WidgetRow: View {
                 .foregroundStyle(color)
             Spacer(minLength: 0)
         }
-    }
-}
-
-// MARK: - 控制中心控件
-
-struct FlowControlValue: Equatable {
-    var remainingGB: Double
-    var usedGB: Double
-}
-
-struct FlowControlProvider: ControlValueProvider {
-    var previewValue: FlowControlValue {
-        FlowControlValue(remainingGB: 120, usedGB: 0)
-    }
-
-    func currentValue() async throws -> FlowControlValue {
-        let s = SharedStats.Snapshot()
-        return FlowControlValue(remainingGB: s.remainingGB, usedGB: s.usedGB)
-    }
-}
-
-/// 控制中心：剩余流量，点击打开 App。
-struct RemainingControlWidget: ControlWidget {
-    let kind = "com.flowguard.traffic.control.remaining"
-
-    var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: kind, provider: FlowControlProvider()) { value in
-            ControlWidgetButton(action: OpenFlowAppIntent()) {
-                Label("\(Int(value.remainingGB.rounded())) GB",
-                      systemImage: "gauge.with.dots.needle.50percent")
-            }
-        }
-        .displayName("剩余流量")
-        .description("显示本月剩余流量，点击打开 App")
-    }
-}
-
-/// 控制中心：已用流量，点击打开 App。
-struct UsedControlWidget: ControlWidget {
-    let kind = "com.flowguard.traffic.control.used"
-
-    var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(kind: kind, provider: FlowControlProvider()) { value in
-            ControlWidgetButton(action: OpenFlowAppIntent()) {
-                Label(String(format: "%.1f GB", value.usedGB),
-                      systemImage: "arrow.up.circle.fill")
-            }
-        }
-        .displayName("已用流量")
-        .description("显示本月已用流量，点击打开 App")
     }
 }
