@@ -45,6 +45,12 @@ struct IconBadge: View {
     let color: Color
     var size: CGFloat = 42
 
+    init(_ icon: String, color: Color, size: CGFloat = 42) {
+        self.icon = icon
+        self.color = color
+        self.size = size
+    }
+
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.30, style: .continuous)
             .fill(color.opacity(0.16))
