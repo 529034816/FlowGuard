@@ -6,9 +6,12 @@
 import Foundation
 import UserNotifications
 
-final class NotificationService {
+final class NotificationService: NSObject {
     static let shared = NotificationService()
-    private init() {}
+    private override init() {
+        super.init()
+        UNUserNotificationCenter.current().delegate = self
+    }
 
     func requestAuthorization() async -> Bool {
         do {
@@ -50,5 +53,18 @@ final class NotificationService {
             trigger: nil
         )
         UNUserNotificationCenter.current().add(request)
+    }
+}
+
+// MARK: - 前台也展示横幅
+
+extension NotificationService: UNUserNotificationCenterDelegate {
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        // App 在前台（如刚校准、采样触发阈值）时也立即弹横幅、发声、并入通知中心。
+        completionHandler([.banner, .sound, .list])
     }
 }

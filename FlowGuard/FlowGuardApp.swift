@@ -13,6 +13,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         // 后台任务必须在启动周期内注册
         BackgroundTaskManager.shared.register()
+        // 尽早设置通知代理，保证前台也能弹横幅
+        _ = NotificationService.shared
         return true
     }
 }

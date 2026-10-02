@@ -9,7 +9,8 @@ import Foundation
 
 struct SharedStats {
     /// 必须与两个 target 的 entitlements 中声明的 App Group 一致。
-    static let appGroupID = "group.com.flowguard.shared"
+    /// 运行时从签名解析的真实 App Group ID（自动适配 AltStore 的团队后缀）。
+    static let appGroupID = AppGroupResolver.resolvedID()
     static var suite: UserDefaults? { UserDefaults(suiteName: appGroupID) }
 
     enum Key {
