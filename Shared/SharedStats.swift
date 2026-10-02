@@ -9,7 +9,7 @@ import Foundation
 
 struct SharedStats {
     /// 必须与两个 target 的 entitlements 中声明的 App Group 一致。
-    static let appGroupID = "group.com.flowguard.traffic"
+    static let appGroupID = "group.com.flowguard.shared"
     static var suite: UserDefaults? { UserDefaults(suiteName: appGroupID) }
 
     enum Key {

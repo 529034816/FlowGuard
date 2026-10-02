@@ -8,7 +8,7 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "7"
+    CURRENT_PROJECT_VERSION: "8"
     DEVELOPMENT_LANGUAGE: zh-Hans
 targets:
   FlowGuard:
@@ -35,7 +35,7 @@ targets:
       path: FlowGuard/FlowGuard.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.flowguard.traffic
+          - group.com.flowguard.shared
     dependencies:
       - target: FlowGuardWidget
         embed: true
@@ -60,14 +60,14 @@ targets:
     info:
       path: Widget/Info.plist
       properties:
-        CFBundleDisplayName: 流量管家
+        CFBundleDisplayName: FlowGuard Widget
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     entitlements:
       path: Widget/FlowGuardWidget.entitlements
       properties:
         com.apple.security.application-groups:
-          - group.com.flowguard.traffic
+          - group.com.flowguard.shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flowguard.traffic.widget
