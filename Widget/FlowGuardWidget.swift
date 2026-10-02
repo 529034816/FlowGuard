@@ -2,11 +2,12 @@
 //  FlowGuardWidget.swift
 //  FlowGuardWidget
 //
-//  桌面小组件：本月流量进度
+//  桌面 / 锁屏小组件 + 控制中心控件
 //
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - 数据条目
 
@@ -39,6 +40,8 @@ struct Provider: TimelineProvider {
 struct FlowGuardWidgetBundle: WidgetBundle {
     var body: some Widget {
         FlowGuardWidget()
+        RemainingControlWidget()
+        UsedControlWidget()
     }
 }
 
@@ -76,13 +79,26 @@ struct FlowWidgetEntryView: View {
         return [Theme.blue, Theme.cyan]
     }
 
+    private var isAccessory: Bool {
+        family == .accessoryCircular || family == .accessoryRectangular || family == .accessoryInline
+    }
+
     var body: some View {
+        content
+            .containerBackground(for: .widget) {
+                if isAccessory {
+                    Color.clear
+                } else {
+                    widgetBackground
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
         switch family {
         case .systemMedium:
-            ZStack {
-                widgetBackground
-                mediumView
-            }
+            mediumView
         case .accessoryCircular:
             circularView
         case .accessoryRectangular:
@@ -90,10 +106,7 @@ struct FlowWidgetEntryView: View {
         case .accessoryInline:
             inlineView
         default:
-            ZStack {
-                widgetBackground
-                smallView
-            }
+            smallView
         }
     }
 
@@ -237,5 +250,45 @@ struct WidgetRow: View {
                 .foregroundStyle(color)
             Spacer(minLength: 0)
         }
+    }
+}
+
+// MARK: - 控制中心控件（iOS 18+）
+
+struct RemainingControlWidget: ControlWidget {
+    let kind = "com.flowguard.traffic.control.remaining"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: kind) {
+            ControlWidgetButton(action: OpenFlowAppIntent()) {
+                Label {
+                    let s = SharedStats.Snapshot()
+                    Text("剩余 \(String(format: "%.0f", s.remainingGB)) GB")
+                } icon: {
+                    Image(systemName: "gauge.with.dots.needle.50percent")
+                }
+            }
+        }
+        .displayName("剩余流量")
+        .description("显示本月剩余流量，点击打开 App")
+    }
+}
+
+struct UsedControlWidget: ControlWidget {
+    let kind = "com.flowguard.traffic.control.used"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: kind) {
+            ControlWidgetButton(action: OpenFlowAppIntent()) {
+                Label {
+                    let s = SharedStats.Snapshot()
+                    Text("已用 \(String(format: "%.0f", s.usedGB)) GB")
+                } icon: {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                }
+            }
+        }
+        .displayName("已用流量")
+        .description("显示本月已用流量，点击打开 App")
     }
 }
