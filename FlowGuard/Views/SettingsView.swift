@@ -9,6 +9,8 @@ struct SettingsView: View {
     @EnvironmentObject private var monitor: TrafficMonitor
     @State private var showCalibration = false
     @State private var notificationStatusText = "未检查"
+    @State private var versionText = ""
+    @State private var expirationText = ""
 
     var body: some View {
         NavigationStack {
@@ -78,9 +80,42 @@ struct SettingsView: View {
                 } footer: {
                     Text("本 App 的流量为系统接口估算，可能与运营商统计有偏差。建议每月在运营商 App 查到实际已用流量后，在此校准 1～2 次。")
                 }
+
+                Section {
+                    HStack {
+                        Text("版本")
+                        Spacer()
+                        Text(versionText)
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("签名到期时间")
+                        Spacer()
+                        Text(expirationText)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("关于")
+                } footer: {
+                    Text("免费签名有效期为 7 天，到期前一天 App 会通知你续签；续签为覆盖安装，设置与校准数据不会丢失。")
+                }
             }
             .navigationTitle("设置")
             .onAppear {
+                let info = Bundle.main.infoDictionary
+                let shortVersion = info?["CFBundleShortVersionString"] as? String ?? "?"
+                let build = info?["CFBundleVersion"] as? String ?? "?"
+                versionText = "\(shortVersion)（\(build)）"
+
+                if let expiration = ProvisionProfile.expirationDate() {
+                    let formatter = DateFormatter()
+                    formatter.locale = Locale(identifier: "zh_CN")
+                    formatter.dateFormat = "MM月dd日 HH:mm"
+                    expirationText = formatter.string(from: expiration)
+                } else {
+                    expirationText = "未知"
+                }
+
                 Task {
                     let status = await NotificationService.shared.authorizationStatus()
                     switch status {

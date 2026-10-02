@@ -30,10 +30,15 @@ struct FlowGuardApp: App {
                 .onAppear {
                     BackgroundTaskManager.shared.scheduleNextRefresh()
                     monitor.sample()
+                    RenewalReminder.schedule()
                 }
                 .onChange(of: scenePhase) { phase in
                     if phase == .active || phase == .background {
                         monitor.sample()
+                    }
+                    if phase == .active {
+                        // 续签后过期时间会更新，回到前台时重新计算提醒
+                        RenewalReminder.schedule()
                     }
                     if phase == .background {
                         BackgroundTaskManager.shared.scheduleNextRefresh()
