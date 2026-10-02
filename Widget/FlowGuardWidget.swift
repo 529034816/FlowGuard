@@ -7,6 +7,7 @@
 
 import WidgetKit
 import SwiftUI
+import AppIntents
 
 // MARK: - 数据条目
 
@@ -39,6 +40,8 @@ struct Provider: TimelineProvider {
 struct FlowGuardWidgetBundle: WidgetBundle {
     var body: some Widget {
         FlowGuardWidget()
+        RemainingControlWidget()
+        UsedControlWidget()
     }
 }
 
@@ -51,7 +54,13 @@ struct FlowGuardWidget: Widget {
         }
         .configurationDisplayName("流量管家")
         .description("查看本月已用与剩余流量")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline
+        ])
     }
 }
 
@@ -71,18 +80,67 @@ struct FlowWidgetEntryView: View {
     }
 
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [Theme.blue.opacity(0.10), Color(.systemBackground)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            if family == .systemMedium {
+        switch family {
+        case .systemMedium:
+            ZStack {
+                widgetBackground
                 mediumView
-            } else {
+            }
+        case .accessoryCircular:
+            circularView
+        case .accessoryRectangular:
+            rectangularView
+        case .accessoryInline:
+            inlineView
+        default:
+            ZStack {
+                widgetBackground
                 smallView
             }
         }
+    }
+
+    private var widgetBackground: some View {
+        LinearGradient(
+            colors: [Theme.blue.opacity(0.10), Color(.systemBackground)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+
+    // 锁屏：环形
+    private var circularView: some View {
+        ZStack {
+            Circle()
+                .stroke(.secondary, lineWidth: 4)
+            Circle()
+                .trim(from: 0, to: max(CGFloat(min(max(s.progress, 0), 1)), 0.001))
+                .stroke(.primary, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Text("\(Int((s.progress * 100).rounded()))%")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+        }
+    }
+
+    // 锁屏：矩形
+    private var rectangularView: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 5) {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                Text("流量管家").font(.system(size: 13, weight: .semibold))
+            }
+            Text("已用 \(String(format: "%.1f", s.usedGB)) · 剩 \(String(format: "%.1f", s.remainingGB)) GB")
+                .font(.system(size: 12, weight: .medium))
+            Text("距重置 \(s.daysRemaining) 天 · \(Int((s.progress * 100).rounded()))%")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // 锁屏：时钟上方单行
+    private var inlineView: some View {
+        Text("已用 \(String(format: "%.1f", s.usedGB)) GB，剩 \(String(format: "%.0f", s.remainingGB)) GB")
     }
 
     // 小尺寸
@@ -182,5 +240,55 @@ struct WidgetRow: View {
                 .foregroundStyle(color)
             Spacer(minLength: 0)
         }
+    }
+}
+
+// MARK: - 控制中心控件
+
+struct FlowControlValue: Equatable {
+    var remainingGB: Double
+    var usedGB: Double
+}
+
+struct FlowControlProvider: ControlValueProvider {
+    var previewValue: FlowControlValue {
+        FlowControlValue(remainingGB: 120, usedGB: 0)
+    }
+
+    func currentValue() async throws -> FlowControlValue {
+        let s = SharedStats.Snapshot()
+        return FlowControlValue(remainingGB: s.remainingGB, usedGB: s.usedGB)
+    }
+}
+
+/// 控制中心：剩余流量，点击打开 App。
+struct RemainingControlWidget: ControlWidget {
+    let kind = "com.flowguard.traffic.control.remaining"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: kind, provider: FlowControlProvider()) { value in
+            ControlWidgetButton(action: OpenFlowAppIntent()) {
+                Label("\(Int(value.remainingGB.rounded())) GB",
+                      systemImage: "gauge.with.dots.needle.50percent")
+            }
+        }
+        .displayName("剩余流量")
+        .description("显示本月剩余流量，点击打开 App")
+    }
+}
+
+/// 控制中心：已用流量，点击打开 App。
+struct UsedControlWidget: ControlWidget {
+    let kind = "com.flowguard.traffic.control.used"
+
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: kind, provider: FlowControlProvider()) { value in
+            ControlWidgetButton(action: OpenFlowAppIntent()) {
+                Label(String(format: "%.1f GB", value.usedGB),
+                      systemImage: "arrow.up.circle.fill")
+            }
+        }
+        .displayName("已用流量")
+        .description("显示本月已用流量，点击打开 App")
     }
 }
