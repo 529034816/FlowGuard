@@ -262,10 +262,12 @@ struct RemainingControlWidget: ControlWidget {
         StaticControlConfiguration(kind: kind) {
             ControlWidgetButton(action: OpenFlowAppIntent()) {
                 Label {
-                    let s = SharedStats.Snapshot()
-                    Text("剩余 \(String(format: "%.0f", s.remainingGB)) GB")
+                    Text("剩余流量")
                 } icon: {
-                    Image(systemName: "gauge.with.dots.needle.50percent")
+                    let s = SharedStats.Snapshot()
+                    Text(String(format: "%.0f", s.remainingGB))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.55)
                 }
             }
         }
@@ -281,10 +283,12 @@ struct UsedControlWidget: ControlWidget {
         StaticControlConfiguration(kind: kind) {
             ControlWidgetButton(action: OpenFlowAppIntent()) {
                 Label {
-                    let s = SharedStats.Snapshot()
-                    Text("已用 \(String(format: "%.0f", s.usedGB)) GB")
+                    Text("已用流量")
                 } icon: {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    let s = SharedStats.Snapshot()
+                    Text(String(format: "%.0f", s.usedGB))
+                        .font(.system(size: 17, weight: .bold, design: .rounded))
+                        .minimumScaleFactor(0.55)
                 }
             }
         }
