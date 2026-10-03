@@ -28,7 +28,7 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Build app (ad-hoc signed, keeps entitlements)
+      - name: Build unsigned app
         run: |
           xcodebuild \
             -project FlowGuard.xcodeproj \
@@ -36,26 +36,14 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
-            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=YES \
-            PROVISIONING_PROFILE_SPECIFIER="" \
-            DEVELOPMENT_TEAM=""
+            CODE_SIGNING_ALLOWED=NO
 
-      - name: Verify entitlements embedded
-        run: |
-          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
-          echo "== 主 App entitlements =="
-          codesign -d --entitlements - "$APP_PATH" 2>&1 | grep -A3 "application-groups" || echo "未找到 app group"
-          echo "== Widget entitlements =="
-          WIDGET=$(find "$APP_PATH/PlugIns" -name "*.appex" | head -n 1)
-          if [ -n "$WIDGET" ]; then
-            codesign -d --entitlements - "$WIDGET" 2>&1 | grep -A3 "application-groups" || echo "widget 未找到 app group"
-          else
-            echo "未找到 widget appex"
-          fi
+      - name: Install ldid
+        run: brew install ldid
 
-      - name: Package unsigned IPA
+      - name: Package IPA and pseudo-sign with entitlements
         run: |
           APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
           if [ -z "$APP_PATH" ]; then
@@ -66,6 +54,25 @@ jobs:
           rm -rf Payload
           mkdir Payload
           cp -r "$APP_PATH" Payload/
+
+          # 用 ldid 给主 App 与 Widget 注入 entitlements 并伪签名，
+          # 这样 AltStore 能从二进制读到 App Group 并完成注册。
+          APP_EXE=$(/usr/libexec/PlistBuddy -c "Print CFBundleExecutable" "Payload/FlowGuard.app/Info.plist")
+          ldid -SFlowGuard/FlowGuard.entitlements "Payload/FlowGuard.app/$APP_EXE"
+
+          WIDGET_APPEX=$(find "Payload/FlowGuard.app/PlugIns" -name "*.appex" | head -n 1)
+          if [ -n "$WIDGET_APPEX" ]; then
+            WIDGET_EXE=$(/usr/libexec/PlistBuddy -c "Print CFBundleExecutable" "$WIDGET_APPEX/Info.plist")
+            ldid -SWidget/FlowGuardWidget.entitlements "$WIDGET_APPEX/$WIDGET_EXE"
+          fi
+
+          echo "== 主 App entitlements =="
+          ldid -e "Payload/FlowGuard.app/$APP_EXE" | grep -A3 "application-groups" || echo "主 App 未注入 app group"
+          if [ -n "$WIDGET_APPEX" ]; then
+            echo "== Widget entitlements =="
+            ldid -e "$WIDGET_APPEX/$WIDGET_EXE" | grep -A3 "application-groups" || echo "Widget 未注入 app group"
+          fi
+
           rm -f FlowGuard-unsigned.ipa
           zip -rqy FlowGuard-unsigned.ipa Payload
 
