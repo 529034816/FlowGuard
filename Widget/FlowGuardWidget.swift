@@ -246,46 +246,23 @@ struct WidgetRow: View {
     }
 }
 
-// MARK: - 控制中心胶囊（iOS 18+）
-
-/// 胶囊上开关的无害状态：仅保存到 App Group，不影响任何流量功能。
-struct ControlToggleState {
-    static let key = "control.summary.toggle"
-    static var value: Bool { SharedStats.suite?.bool(forKey: key) ?? false }
-    static func set(_ v: Bool) { SharedStats.suite?.set(v, forKey: key) }
-}
-
-/// 开关切换时执行：把开关状态写回 App Group（无害）。
-struct ControlToggleIntent: SetValueIntent {
-    static var title: LocalizedStringResource = "切换流量显示"
-    static var openAppWhenRun: Bool = false
-
-    @Parameter(title: "开关") var value: Bool
-
-    func perform() async throws -> some IntentResult {
-        ControlToggleState.set(value)
-        return .result()
-    }
-}
+// MARK: - 控制中心控件（iOS 18+）
 
 struct FlowSummaryControlWidget: ControlWidget {
     let kind = "com.flowguard.traffic.control.summary"
 
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: kind) {
-            ControlWidgetToggle(
-                "流量用量",
-                isOn: ControlToggleState.value,
-                action: ControlToggleIntent()
-            ) { _ in
+            ControlWidgetButton(action: OpenFlowGuardIntent()) {
                 let s = SharedStats.Snapshot()
                 Label(
-                    "已用 \(String(format: "%.0f", s.usedGB)) · 剩 \(String(format: "%.0f", s.remainingGB)) GB",
-                    systemImage: "gauge.with.dots.needle.50percent"
+                    "用\(Int(s.usedGB.rounded())) 剩\(Int(s.remainingGB.rounded())) GB",
+                    systemImage: "antenna.radiowaves.left.and.right"
                 )
             }
+            .tint(Theme.blue)
         }
         .displayName("流量用量")
-        .description("在控制中心直接显示本月已用与剩余流量")
+        .description("控制中心显示本月已用与剩余流量，点击打开 App")
     }
 }
