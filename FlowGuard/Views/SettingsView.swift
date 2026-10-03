@@ -11,6 +11,8 @@ struct SettingsView: View {
     @State private var notificationStatusText = "未检查"
     @State private var versionText = ""
     @State private var expirationText = ""
+    @State private var diag = AppGroupResolver.info()
+    @State private var rwTestText = ""
 
     var body: some View {
         NavigationStack {
@@ -99,9 +101,60 @@ struct SettingsView: View {
                 } footer: {
                     Text("免费签名有效期为 7 天，到期前一天 App 会通知你续签；续签为覆盖安装，设置与校准数据不会丢失。")
                 }
+
+                Section {
+                    HStack {
+                        Text("选中 Group")
+                        Spacer()
+                        Text(diag.resolvedID)
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                    HStack {
+                        Text("共享容器")
+                        Spacer()
+                        Text(diag.containerURL == nil ? "无（未生效）" : "已创建")
+                            .foregroundStyle(diag.containerURL == nil ? .red : .green)
+                            .font(.caption)
+                    }
+                    HStack {
+                        Text("写读测试")
+                        Spacer()
+                        Text(rwTestText)
+                            .foregroundStyle(rwTestText == "通过" ? .green : .red)
+                            .font(.caption)
+                    }
+                    HStack {
+                        Text("签名文件 / 团队")
+                        Spacer()
+                        Text("\(diag.profileFound ? "找到" : "未找到") · \(diag.teamIdentifier ?? "未知")")
+                            .foregroundStyle(.secondary)
+                            .font(.caption)
+                    }
+                    HStack(alignment: .top) {
+                        Text("候选")
+                        Spacer()
+                        Text(diag.candidates.joined(separator: "\n"))
+                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                            .multilineTextAlignment(.trailing)
+                    }
+                } header: {
+                    Text("共享诊断")
+                } footer: {
+                    Text("用于排查桌面/锁屏/控制中心组件能否读到主 App 数据。若“共享容器”显示无，说明 App Group 在当前签名下未生效。")
+                }
             }
             .navigationTitle("设置")
             .onAppear {
+                diag = AppGroupResolver.info()
+                if let suite = UserDefaults(suiteName: diag.resolvedID) {
+                    suite.set(123.456, forKey: "__rwtest")
+                    rwTestText = (suite.object(forKey: "__rwtest") as? Double == 123.456) ? "通过" : "失败"
+                } else {
+                    rwTestText = "suite为nil"
+                }
+
                 let info = Bundle.main.infoDictionary
                 let shortVersion = info?["CFBundleShortVersionString"] as? String ?? "?"
                 let build = info?["CFBundleVersion"] as? String ?? "?"
