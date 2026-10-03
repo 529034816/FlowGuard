@@ -24,6 +24,8 @@ struct FlowGuardApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var monitor = TrafficMonitor.shared
     @Environment(\.scenePhase) private var scenePhase
+    // 前台定时采样：每 60 秒结算一次增量，保证前台数字持续刷新
+    private let foregroundTimer = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     var body: some Scene {
         WindowGroup {
@@ -33,6 +35,11 @@ struct FlowGuardApp: App {
                     BackgroundTaskManager.shared.scheduleNextRefresh()
                     monitor.sample()
                     RenewalReminder.schedule()
+                }
+                .onReceive(foregroundTimer) { _ in
+                    if scenePhase == .active {
+                        monitor.sample()
+                    }
                 }
                 .onChange(of: scenePhase) { phase in
                     if phase == .active || phase == .background {

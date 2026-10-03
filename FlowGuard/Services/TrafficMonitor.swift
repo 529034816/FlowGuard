@@ -275,5 +275,10 @@ final class TrafficMonitor: ObservableObject {
 
         // 让桌面 / 锁屏小组件立即重新读取共享数据（校准、采样、设置变化后即时生效）。
         WidgetCenter.shared.reloadAllTimelines()
+
+        // 让控制中心控件也立即刷新，无需手动点击。
+        if #available(iOS 18.0, *) {
+            ControlCenter.shared.reloadAllControls()
+        }
     }
 }
