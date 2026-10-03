@@ -114,23 +114,25 @@ struct FlowWidgetEntryView: View {
         )
     }
 
-    // 锁屏：矩形（直接显示已用 / 剩余）
+    // 锁屏：矩形（直接显示已用 / 剩余，整数避免截断）
     private var rectangularView: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Image(systemName: "antenna.radiowaves.left.and.right")
                 Text("流量").font(.system(size: 12, weight: .semibold))
                 Spacer()
-                Text("剩 \(String(format: "%.0f", s.remainingGB)) GB")
+                Text("剩 \(Int(s.remainingGB.rounded())) GB")
                     .font(.system(size: 12, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Text(String(format: "%.1f", s.usedGB))
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                Text("\(Int(s.usedGB.rounded()))")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
                 Text("GB 已用").font(.system(size: 11))
                 Spacer()
-                Text("\(Int((s.progress * 100).rounded()))% · \(s.daysRemaining)天")
-                    .font(.system(size: 11))
+                Text("\(Int((s.progress * 100).rounded()))%")
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.secondary)
             }
         }
@@ -139,7 +141,7 @@ struct FlowWidgetEntryView: View {
 
     // 锁屏：时钟上方单行
     private var inlineView: some View {
-        Text("已用 \(String(format: "%.1f", s.usedGB)) GB，剩 \(String(format: "%.0f", s.remainingGB)) GB")
+        Text("已用 \(Int(s.usedGB.rounded())) GB · 剩 \(Int(s.remainingGB.rounded())) GB")
     }
 
     // 小尺寸
@@ -173,21 +175,21 @@ struct FlowWidgetEntryView: View {
 
     // 中尺寸
     private var mediumView: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 12) {
             ZStack {
-                WidgetRing(progress: s.progress, colors: colors, lineWidth: 13)
+                WidgetRing(progress: s.progress, colors: colors, lineWidth: 12)
                 VStack(spacing: 1) {
                     Text("\(Int((s.progress * 100).rounded()))%")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
                         .foregroundStyle(colors[0])
                     Text("已用")
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                 }
             }
-            .frame(width: 126, height: 126)
+            .frame(width: 114, height: 114)
 
-            VStack(alignment: .leading, spacing: 9) {
+            VStack(alignment: .leading, spacing: 8) {
                 WidgetRow(label: "已用", value: String(format: "%.1f GB", s.usedGB), color: colors[0])
                 WidgetRow(label: "剩余", value: String(format: "%.1f GB", s.remainingGB), color: Theme.green)
                 WidgetRow(label: "日均", value: String(format: "%.2f GB", s.averageDailyGB), color: Theme.purple)
@@ -195,7 +197,7 @@ struct FlowWidgetEntryView: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(14)
+        .padding(12)
     }
 }
 
@@ -229,14 +231,16 @@ struct WidgetRow: View {
     let color: Color
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .frame(width: 40, alignment: .leading)
+                .frame(width: 36, alignment: .leading)
             Text(value)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(color)
+                .lineLimit(1)
+                .minimumScaleFactor(0.65)
             Spacer(minLength: 0)
         }
     }
