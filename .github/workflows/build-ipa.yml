@@ -28,7 +28,7 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Build unsigned app
+      - name: Build app (ad-hoc signed, keeps entitlements)
         run: |
           xcodebuild \
             -project FlowGuard.xcodeproj \
@@ -36,9 +36,24 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -derivedDataPath build \
-            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGNING_ALLOWED=YES \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            DEVELOPMENT_TEAM=""
+
+      - name: Verify entitlements embedded
+        run: |
+          APP_PATH=$(find build/Build/Products/Release-iphoneos -maxdepth 1 -name "*.app" | head -n 1)
+          echo "== 主 App entitlements =="
+          codesign -d --entitlements - "$APP_PATH" 2>&1 | grep -A3 "application-groups" || echo "未找到 app group"
+          echo "== Widget entitlements =="
+          WIDGET=$(find "$APP_PATH/PlugIns" -name "*.appex" | head -n 1)
+          if [ -n "$WIDGET" ]; then
+            codesign -d --entitlements - "$WIDGET" 2>&1 | grep -A3 "application-groups" || echo "widget 未找到 app group"
+          else
+            echo "未找到 widget appex"
+          fi
 
       - name: Package unsigned IPA
         run: |
@@ -48,8 +63,10 @@ jobs:
             exit 1
           fi
           echo "打包产物：$APP_PATH"
+          rm -rf Payload
           mkdir Payload
           cp -r "$APP_PATH" Payload/
+          rm -f FlowGuard-unsigned.ipa
           zip -rqy FlowGuard-unsigned.ipa Payload
 
       - name: Upload IPA artifact
